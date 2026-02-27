@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лунный кот — Сказки</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Alegreya:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0b0b14;
+            --page-bg: #f5f0e8;
+            --page-bg-alt: #f0ead8;
+            --ink: #2a2420;
+            --ink-light: #5a5248;
+            --ink-dim: #9a9080;
+            --accent: #8b6914;
+            --accent-glow: rgba(201, 168, 76, 0.3);
+            --gold: #c9a84c;
+            --page-shadow: rgba(0,0,0,0.4);
+            --page-w: min(520px, 90vw);
+            --page-h: min(700px, 85vh);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Alegreya', Georgia, serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* === BACKGROUND CANVAS === */
+        #bgCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* === BACK LINK === */
+        .back-nav {
+            position: fixed;
+            top: 20px;
+            left: 24px;
+            z-index: 100;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: rgba(255,255,255,0.3);
+            font-family: 'Alegreya', serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { color: var(--gold); }
+        .back-link svg { width: 14px; height: 14px; }
+
+        /* === BOOK CONTAINER === */
+        .book-scene {
+            perspective: 1800px;
+            position: relative;
+            z-index: 1;
+            width: var(--page-w);
+            height: var(--page-h);
+        }
+
+        .book {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+
+        /* === PAGES === */
+        .page {
+            position: absolute;
+            inset: 0;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer;
+        }
+
+        .page.flipped {
+            transform: rotateY(-180deg);
+        }
+
+        .page-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: var(--page-bg);
+            border-radius: 2px 8px 8px 2px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-face.back {
+            transform: rotateY(180deg);
+            border-radius: 8px 2px 2px 8px;
+        }
+
+        /* Page texture overlay */
+        .page-face::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 28px,
+                    rgba(0,0,0,0.008) 28px,
+                    rgba(0,0,0,0.008) 29px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Page edge shadow */
+        .page-face::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 30px;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .page-face.front::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0,0,0,0.06), transparent);
+        }
+
+        .page-face.back::after {
+            left: 0;
+            background: linear-gradient(to right, rgba(0,0,0,0.06), transparent);
+        }
+
+        /* Spine shadow on left */
+        .page-face.front {
+            box-shadow: inset 8px 0 20px -8px rgba(0,0,0,0.08);
+        }
+        .page-face.back {
+            box-shadow: inset -8px 0 20px -8px rgba(0,0,0,0.08);
+        }
+
+        /* === PAGE CONTENT === */
+        .page-content {
+            flex: 1;
+            padding: 40px 36px 24px 44px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page-face.back .page-content {
+            padding: 40px 44px 24px 36px;
+        }
+
+        /* === MARGIN ART CANVAS === */
+        .margin-art {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* === TEXT STYLES === */
+        .page-text {
+            position: relative;
+            z-index: 1;
+            color: var(--ink);
+            font-size: 1.02rem;
+            line-height: 1.82;
+        }
+
+        .page-text p {
+            margin-bottom: 1.1em;
+            text-indent: 1.8em;
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .page-text p:first-child {
+            text-indent: 0;
+        }
+
+        .page-text .drop-cap::first-letter {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 4em;
+            float: left;
+            line-height: 0.75;
+            margin-right: 6px;
+            margin-top: 8px;
+            color: var(--accent);
+        }
+
+        .page-text .scene-break {
+            text-align: center;
+            color: var(--accent);
+            font-size: 0.85rem;
+            letter-spacing: 10px;
+            margin: 1.5em 0;
+            text-indent: 0;
+        }
+
+        .page-text blockquote {
+            margin: 1.2em 0;
+            padding: 0.8em 1.5em;
+            border-left: 2px solid var(--accent);
+            background: rgba(139, 105, 20, 0.04);
+            border-radius: 0 6px 6px 0;
+            font-style: italic;
+            color: var(--ink-light);
+            text-indent: 0;
+        }
+
+        .page-text h2 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 400;
+            font-size: 1.3rem;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 1em;
+            text-indent: 0;
+            letter-spacing: 0.05em;
+        }
+
+        /* === COVER PAGE === */
+        .cover-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .cover-emoji {
+            font-size: 4rem;
+            margin-bottom: 32px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .cover-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 300;
+            font-size: 2.2rem;
+            color: var(--ink);
+            letter-spacing: 0.06em;
+            margin-bottom: 12px;
+        }
+
+        .cover-subtitle {
+            font-style: italic;
+            color: var(--ink-dim);
+            font-size: 0.95rem;
+            margin-bottom: 48px;
+        }
+
+        .cover-ornament {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--accent);
+        }
+
+        .cover-ornament .line {
+            width: 50px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        .cover-hint {
+            margin-top: 60px;
+            font-size: 0.75rem;
+            color: var(--ink-dim);
+            letter-spacing: 0.12em;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* === PAGE NUMBER === */
+        .page-number {
+            text-align: center;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 0.8rem;
+            color: var(--ink-dim);
+            padding: 8px 0 16px;
+            letter-spacing: 0.1em;
+        }
+
+        /* === NAVIGATION === */
+        .nav-bar {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeIn 1s 0.5s ease forwards;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.4);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(201, 168, 76, 0.08);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.2;
+            cursor: default;
+        }
+
+        .nav-btn svg { width: 18px; height: 18px; }
+
+        .nav-info {
+            color: rgba(255,255,255,0.25);
+            font-size: 0.78rem;
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 0.1em;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* === PROGRESS === */
+        .progress-bar {
+            position: relative;
+            z-index: 10;
+            width: var(--page-w);
+            height: 2px;
+            background: rgba(255,255,255,0.05);
+            margin-top: 16px;
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), rgba(201,168,76,0.4));
+            border-radius: 1px;
+            transition: width 0.5s ease;
+        }
+
+        /* === MAGIC PARTICLES ON PAGE TURN === */
+        .magic-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 50;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--gold);
+            animation: particleFly 1s ease-out forwards;
+        }
+
+        @keyframes particleFly {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0) translateY(-60px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+
+        /* === MOBILE === */
+        @media (max-width: 560px) {
+            :root {
+                --page-w: 96vw;
+                --page-h: 80vh;
+            }
+            .page-content { padding: 28px 20px 16px 24px; }
+            .page-face.back .page-content { padding: 28px 24px 16px 20px; }
+            .page-text { font-size: 0.92rem; line-height: 1.75; }
+            .cover-title { font-size: 1.6rem; }
+            .cover-emoji { font-size: 3rem; }
+            .back-nav { top: 10px; left: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <nav class="back-nav">
+        <a href="../index.html" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M19 12H5M12 18l-6-6 6-6"/>
+            </svg>
+            назад
+        </a>
+    </nav>
+
+    <div class="book-scene">
+        <div class="book" id="book"></div>
+    </div>
+
+    <div class="nav-bar">
+        <button class="nav-btn" id="prevBtn" onclick="prevPage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </button>
+        <span class="nav-info" id="navInfo"></span>
+        <button class="nav-btn" id="nextBtn" onclick="nextPage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 18l6-6-6-6"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <script>
+    // ============================================
+    // КОНФИГУРАЦИЯ СКАЗКИ — меняй только это
+    // ============================================
+    const TALE_CONFIG = {
+        title: "Лунный кот",
+        emoji: "🌙🐱",
+        subtitle: "сказка о свете, который нельзя украсть",
+        // Стиль оформления полей: "vines", "stars", "geometric", "waves", "fireflies"
+        marginStyle: "stars",
+        // Цвет акцентов маргиналий
+        marginColor: "rgba(139, 105, 20, 0.12)"
+    };
+
+    // ============================================
+    // ТЕКСТ СКАЗКИ
+    // Каждый элемент массива = блок контента.
+    // Типы: "p" (абзац), "break" (разделитель), "quote" (цитата), "h2" (подзаголовок)
+    // Первый абзац автоматически получит буквицу.
+    // ============================================
+    const TALE_TEXT = [
+        { type: "p", text: "Жил-был кот, который каждую ночь смотрел на луну и думал: «Если бы я мог забрать её себе, мне бы никогда не было темно и одиноко». Он жил на самой высокой крыше самого старого дома в городе, где ветер пел колыбельные черепицам, а дождь стучал свои маленькие истории о далёких морях." },
+        { type: "p", text: "Другие коты давно спустились вниз — в тёплые комнаты, к блюдцам с молоком и мягким коленям. Они забыли, как выглядят звёзды вблизи, и перестали слышать, как луна тихонько гудит свою бесконечную песню. Но этот кот оставался наверху." },
+        { type: "p", text: "Его звали Нигде — потому что когда его искали, он всегда был нигде: ни во дворе, ни в подвале, ни на подоконнике. Только на крыше. Только ночью. Только один." },
+        { type: "break" },
+        { type: "p", text: "Однажды — это было в ту ночь, когда луна висела так низко, что казалось, можно дотянуться лапой — Нигде решился. Он разбежался по черепицам, оттолкнулся от самого края крыши и прыгнул вверх, в чёрное бархатное небо." },
+        { type: "p", text: "И случилось невозможное. Он не упал. Ночной воздух стал густым и упругим, как вода, и кот поплыл по нему вверх, к луне, оставляя за собой серебристый след из шерстинок, каждая из которых светилась, как маленькая звезда." },
+        { type: "p", text: "Луна становилась всё ближе. Она была не такой, как казалась снизу — не холодной и не гладкой. Вблизи луна выглядела как огромный тёплый фонарь, сотканный из тысяч тонких светящихся нитей. И от неё шёл запах — странный, щемящий запах мёда, пыли и чего-то забытого." },
+        { type: "quote", text: "«Ты пришёл, — сказала луна. Голос у неё был как шёпот в пустой комнате. — Я ждала. Ты так долго смотрел на меня, что я решила: может быть, ты знаешь что-то, чего не знают другие»." },
+        { type: "p", text: "«Я пришёл забрать тебя», — сказал Нигде, и сам удивился, как тихо и неуверенно это прозвучало в огромной пустоте между звёзд." },
+        { type: "p", text: "Луна не рассердилась. Она мягко засмеялась, и от её смеха по небу побежали серебряные круги, как от камня, брошенного в воду." },
+        { type: "quote", text: "«Забрать? Но ведь я и так твоя — каждую ночь. Разве этого мало?»" },
+        { type: "break" },
+        { type: "h2", text: "Глава вторая: Тень без хозяина" },
+        { type: "p", text: "Нигде не знал, что ответить. Он столько ночей мечтал об этом моменте, что забыл придумать, что будет делать, когда мечта сбудется. Это часто бывает с теми, кто мечтает слишком сильно: они так привыкают к дороге, что забывают о месте назначения." },
+        { type: "p", text: "Он сел на край луны, свесив хвост в пустоту, и посмотрел вниз. Город был крошечным, как горсть светящихся крупинок, и его крыша — самая высокая крыша самого старого дома — была едва видна." },
+        { type: "p", text: "«Можно мне остаться здесь?» — спросил кот." },
+        { type: "p", text: "«Можно, — ответила луна. — Но ты должен знать: тот, кто остаётся на луне, теряет свою тень. Она остаётся внизу и живёт дальше — ходит по улицам, ест из блюдец, спит на подоконниках. Но она не помнит, что была чьей-то тенью. И ты не будешь помнить, что она была твоей»." },
+        { type: "p", text: "Нигде задумался. Тень — это ведь то, что привязывает тебя к земле. Без тени ты можешь быть где угодно. Но без тени ты нигде." },
+        { type: "p", text: "«Я и так Нигде», — сказал кот и улыбнулся." },
+        { type: "p", text: "Луна помолчала. Потом тихо произнесла:" },
+        { type: "quote", text: "«Это самая грустная шутка, которую я слышала за тысячу лет. И самая смелая»." },
+        { type: "break" },
+        { type: "p", text: "Шли ночи. Или, может быть, годы — на луне время устроено иначе, оно течёт не вперёд, а вглубь, как корни дерева. Нигде лежал на тёплой поверхности луны, и она рассказывала ему истории." },
+        { type: "p", text: "Она рассказывала о первом человеке, который посмотрел вверх и заплакал от красоты. О влюблённых, которые загадывали желания. О поэтах, которые писали о ней стихи, не зная, что она их слышит. О приливах и отливах — о том, как океаны тянутся к ней, словно дети к матери." },
+        { type: "p", text: "«А обо мне кто-нибудь думает?» — спросил однажды Нигде." },
+        { type: "p", text: "Луна посветила чуть ярче, и в её свете кот увидел далеко внизу — на крыше старого дома — свою тень. Она сидела там, где он любил сидеть, и смотрела вверх. Но она не видела луну. Она видела просто светлое пятно в небе." },
+        { type: "p", text: "«Она каждую ночь приходит сюда, — сказала луна. — Она не помнит тебя. Но что-то в ней помнит. Что-то, у чего нет имени»." },
+        { type: "p", text: "И тогда Нигде впервые почувствовал, что значит быть луной — видеть всех, светить всем и ни к кому не мочь прикоснуться." },
+        { type: "break" },
+        { type: "h2", text: "Глава третья: Возвращение" },
+        { type: "p", text: "«Я хочу вернуться», — сказал кот." },
+        { type: "p", text: "Луна вздохнула. От её вздоха погасли три маленькие звезды и тут же зажглись снова." },
+        { type: "quote", text: "«Я знала, что ты это скажешь. Все так говорят — рано или поздно. Те, кто приходит ко мне, всегда уходят. Такова моя судьба — быть светом, к которому стремятся, и местом, которое покидают»." },
+        { type: "p", text: "«Мне жаль», — прошептал Нигде." },
+        { type: "p", text: "«Не надо. Ты научил меня кое-чему важному. Я всегда думала, что одиночество — это когда ты один. Но одиночество — это когда рядом есть тот, кто скоро уйдёт, и ты уже чувствуешь пустоту заранее. Спасибо, что показал мне это»." },
+        { type: "p", text: "Нигде не знал, благодарят его или упрекают. На луне и это устроено иначе — благодарность и боль сделаны из одного материала." },
+        { type: "p", text: "Он прыгнул вниз. Падение было долгим и мягким, как погружение в сон, и когда он приземлился на свою крышу, он не почувствовал удара — только тепло черепицы под лапами и тяжесть тени, которая тут же вернулась к нему, прижалась, как котёнок, и больше не отпускала." },
+        { type: "break" },
+        { type: "p", text: "С тех пор Нигде по-прежнему сидит на крыше каждую ночь. Он смотрит на луну, и луна смотрит на него. Они больше не разговаривают — им это не нужно. Есть вещи, которые понятны без слов, и главная из них: некоторые расстояния существуют не для того, чтобы их преодолевать, а для того, чтобы между двумя точками было место для света." },
+        { type: "p", text: "А тень его стала странной — серебристой по краям, будто подсвеченной изнутри. И когда дети замечали эту тень на тротуаре, они всегда останавливались и смотрели вверх." },
+        { type: "p", text: "Они не знали, почему. Но что-то в них помнило." }
+    ];
+
+    // ============================================
+    // ДВИЖОК КНИГИ (не трогать)
+    // ============================================
+
+    const book = document.getElementById('book');
+    const navInfo = document.getElementById('navInfo');
+    const progressFill = document.getElementById('progressFill');
+    let pages = [];
+    let currentPage = 0;
+    let totalPages = 0;
+
+    // --- Paginate text to fit pages ---
+    function buildBook() {
+        book.innerHTML = '';
+        pages = [];
+
+        // Cover page
+        const coverHtml = `
+            <div class="cover-content">
+                <span class="cover-emoji">${TALE_CONFIG.emoji}</span>
+                <h1 class="cover-title">${TALE_CONFIG.title}</h1>
+                <p class="cover-subtitle">${TALE_CONFIG.subtitle || ''}</p>
+                <div class="cover-ornament">
+                    <span class="line"></span>
+                    <span style="font-size:12px">✦</span>
+                    <span class="line"></span>
+                </div>
+                <p class="cover-hint">нажмите, чтобы читать →</p>
+            </div>`;
+
+        // Convert tale text to HTML blocks
+        const blocks = TALE_TEXT.map((item, idx) => {
+            switch(item.type) {
+                case 'p':
+                    const cls = idx === 0 ? ' class="drop-cap"' : '';
+                    return `<p${cls}>${item.text}</p>`;
+                case 'break':
+                    return '<p class="scene-break">✦ ✦ ✦</p>';
+                case 'quote':
+                    return `<blockquote>${item.text}</blockquote>`;
+                case 'h2':
+                    return `<h2>${item.text}</h2>`;
+                default:
+                    return `<p>${item.text}</p>`;
+            }
+        });
+
+        // Measure and paginate
+        const measurer = document.createElement('div');
+        measurer.style.cssText = `
+            position: absolute; visibility: hidden; pointer-events: none;
+            width: calc(var(--page-w) - 80px); font-family: Alegreya, Georgia, serif;
+            font-size: 1.02rem; line-height: 1.82;
+        `;
+        document.body.appendChild(measurer);
+
+        const pageHeight = Math.min(700, window.innerHeight * 0.85) - 80;
+        const contentPages = [];
+        let currentContent = [];
+        let currentHeight = 0;
+
+        blocks.forEach((blockHtml) => {
+            measurer.innerHTML = blockHtml;
+            const blockHeight = measurer.offsetHeight + 18;
+
+            if (currentHeight + blockHeight > pageHeight && currentContent.length > 0) {
+                contentPages.push(currentContent.join(''));
+                currentContent = [blockHtml];
+                currentHeight = blockHeight;
+            } else {
+                currentContent.push(blockHtml);
+                currentHeight += blockHeight;
+            }
+        });
+
+        if (currentContent.length > 0) {
+            contentPages.push(currentContent.join(''));
+        }
+
+        document.body.removeChild(measurer);
+
+        // Build page pairs (front + back)
+        // Each physical page has 2 sides
+        const allSides = [coverHtml, ...contentPages.map(html =>
+            `<div class="page-text">${html}</div>`
+        )];
+
+        // Add final page
+        allSides.push(`
+            <div class="cover-content">
+                <div class="cover-ornament" style="margin-bottom: 32px;">
+                    <span class="line"></span>
+                    <span style="font-size:12px">✦</span>
+                    <span class="line"></span>
+                </div>
+                <p class="cover-subtitle" style="font-size: 1.1rem;">конец</p>
+                <p class="cover-subtitle" style="margin-top: 24px; font-size: 0.85rem;">
+                    ${TALE_CONFIG.title}
+                </p>
+            </div>
+        `);
+
+        // Pad to even
+        if (allSides.length % 2 !== 0) allSides.push('');
+
+        totalPages = allSides.length / 2;
+
+        for (let i = 0; i < totalPages; i++) {
+            const pageEl = document.createElement('div');
+            pageEl.className = 'page';
+            pageEl.style.zIndex = totalPages - i;
+
+            const frontContent = allSides[i * 2];
+            const backContent = allSides[i * 2 + 1];
+
+            const frontNum = i * 2;
+            const backNum = i * 2 + 1;
+
+            pageEl.innerHTML = `
+                <div class="page-face front">
+                    <canvas class="margin-art" data-page="${frontNum}"></canvas>
+                    <div class="page-content">${frontContent}</div>
+                    ${frontNum > 0 ? `<div class="page-number">${frontNum}</div>` : ''}
+                </div>
+                <div class="page-face back">
+                    <canvas class="margin-art" data-page="${backNum}"></canvas>
+                    <div class="page-content">${backContent}</div>
+                    <div class="page-number">${backNum}</div>
+                </div>
+            `;
+
+            pageEl.addEventListener('click', () => {
+                if (i >= currentPage) nextPage();
+                else prevPage();
+            });
+
+            book.appendChild(pageEl);
+            pages.push(pageEl);
+        }
+
+        updateNav();
+        drawAllMarginArt();
+    }
+
+    function nextPage() {
+        if (currentPage >= totalPages - 1) return;
+        pages[currentPage].classList.add('flipped');
+        currentPage++;
+        updateNav();
+        spawnMagicParticles();
+    }
+
+    function prevPage() {
+        if (currentPage <= 0) return;
+        currentPage--;
+        pages[currentPage].classList.remove('flipped');
+        updateNav();
+        spawnMagicParticles();
+    }
+
+    function updateNav() {
+        const total = totalPages;
+        navInfo.textContent = `${currentPage + 1} / ${total}`;
+        document.getElementById('prevBtn').disabled = currentPage <= 0;
+        document.getElementById('nextBtn').disabled = currentPage >= total - 1;
+        progressFill.style.width = ((currentPage + 1) / total * 100) + '%';
+
+        // Update z-indices
+        pages.forEach((p, i) => {
+            if (i < currentPage) {
+                p.style.zIndex = i;
+            } else {
+                p.style.zIndex = totalPages - i;
+            }
+        });
+    }
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextPage(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevPage(); }
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', e => {
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) nextPage(); else prevPage();
+        }
+    });
+
+    // ============================================
+    // MAGIC PARTICLES
+    // ============================================
+    function spawnMagicParticles() {
+        const rect = book.getBoundingClientRect();
+        const x = rect.left + rect.width * 0.1;
+        const count = 8 + Math.random() * 6;
+
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'magic-particle';
+            p.style.left = (x + Math.random() * 30 - 15) + 'px';
+            p.style.top = (rect.top + Math.random() * rect.height) + 'px';
+            p.style.width = (2 + Math.random() * 3) + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDuration = (0.6 + Math.random() * 0.8) + 's';
+            p.style.background = Math.random() > 0.5 ?
+                'var(--gold)' :
+                'rgba(255, 255, 255, 0.6)';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 1200);
+        }
+    }
+
+    // ============================================
+    // MARGIN ART (Canvas decorations)
+    // ============================================
+    function drawAllMarginArt() {
+        document.querySelectorAll('.margin-art').forEach(canvas => {
+            const page = parseInt(canvas.dataset.page);
+            if (page === 0) return; // skip cover
+            const rect = canvas.parentElement;
+            canvas.width = rect.offsetWidth;
+            canvas.height = rect.offsetHeight;
+            drawMarginArt(canvas, page);
+        });
+    }
+
+    function drawMarginArt(canvas, pageNum) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const style = TALE_CONFIG.marginStyle;
+        const color = TALE_CONFIG.marginColor;
+
+        // Seed based on page number for consistency
+        const seed = pageNum * 137.5;
+        const rand = (i) => {
+            const x = Math.sin(seed + i * 9.8) * 10000;
+            return x - Math.floor(x);
+        };
+
+        if (style === 'stars') {
+            // Tiny stars and constellations on margins
+            ctx.fillStyle = color;
+            for (let i = 0; i < 25; i++) {
+                const x = rand(i) > 0.5 ?
+                    rand(i + 100) * 40 + 10 :
+                    w - rand(i + 200) * 40 - 10;
+                const y = rand(i + 50) * h;
+                const size = 1 + rand(i + 75) * 2.5;
+                ctx.globalAlpha = 0.15 + rand(i + 30) * 0.2;
+                ctx.beginPath();
+                drawStar(ctx, x, y, size, 4);
+                ctx.fill();
+            }
+            // Constellation lines
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.5;
+            ctx.globalAlpha = 0.08;
+            for (let i = 0; i < 4; i++) {
+                const startX = rand(i + 300) > 0.5 ? rand(i + 310) * 30 + 5 : w - rand(i + 320) * 30 - 5;
+                const startY = rand(i + 330) * h * 0.8 + h * 0.1;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                for (let j = 1; j <= 3; j++) {
+                    ctx.lineTo(
+                        startX + (rand(i + j * 10 + 400) - 0.5) * 30,
+                        startY + j * 25 + rand(i + j * 10 + 500) * 15
+                    );
+                }
+                ctx.stroke();
+            }
+
+            // Moon crescent on some pages
+            if (pageNum % 4 === 1) {
+                ctx.globalAlpha = 0.06;
+                ctx.fillStyle = color;
+                const mx = pageNum % 2 === 0 ? 30 : w - 30;
+                const my = 50 + rand(pageNum) * 40;
+                ctx.beginPath();
+                ctx.arc(mx, my, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(mx + 6, my - 3, 13, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        if (style === 'vines') {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.2;
+            ctx.globalAlpha = 0.15;
+
+            // Vine on one side
+            const side = pageNum % 2 === 0 ? 'left' : 'right';
+            const baseX = side === 'left' ? 18 : w - 18;
+
+            ctx.beginPath();
+            ctx.moveTo(baseX, h * 0.05);
+            for (let y = h * 0.05; y < h * 0.95; y += 4) {
+                const wave = Math.sin(y * 0.015 + seed) * 8;
+                ctx.lineTo(baseX + wave, y);
+            }
+            ctx.stroke();
+
+            // Leaves
+            for (let i = 0; i < 8; i++) {
+                const ly = h * 0.1 + (h * 0.8 / 8) * i + rand(i + 600) * 30;
+                const wave = Math.sin(ly * 0.015 + seed) * 8;
+                const lx = baseX + wave;
+                const dir = side === 'left' ? 1 : -1;
+                ctx.globalAlpha = 0.08 + rand(i + 700) * 0.08;
+                ctx.beginPath();
+                ctx.ellipse(lx + dir * 8, ly, 6, 3, dir * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+        }
+
+        if (style === 'geometric') {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.8;
+            ctx.globalAlpha = 0.08;
+
+            // Corner ornaments
+            const corners = [[0, 0], [w, 0], [0, h], [w, h]];
+            corners.forEach(([cx, cy], ci) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                const scaleX = cx === 0 ? 1 : -1;
+                const scaleY = cy === 0 ? 1 : -1;
+                ctx.scale(scaleX, scaleY);
+                ctx.beginPath();
+                ctx.moveTo(5, 30);
+                ctx.lineTo(5, 5);
+                ctx.lineTo(30, 5);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(12, 12, 3, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Subtle diamonds scattered
+            for (let i = 0; i < 6; i++) {
+                const dx = rand(i + 800) > 0.5 ?
+                    rand(i + 810) * 25 + 8 :
+                    w - rand(i + 820) * 25 - 8;
+                const dy = rand(i + 830) * h * 0.7 + h * 0.15;
+                const size = 3 + rand(i + 840) * 4;
+                ctx.globalAlpha = 0.05 + rand(i + 850) * 0.06;
+                ctx.beginPath();
+                ctx.moveTo(dx, dy - size);
+                ctx.lineTo(dx + size * 0.6, dy);
+                ctx.lineTo(dx, dy + size);
+                ctx.lineTo(dx - size * 0.6, dy);
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+        if (style === 'waves') {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.8;
+
+            for (let i = 0; i < 3; i++) {
+                ctx.globalAlpha = 0.04 + i * 0.02;
+                ctx.beginPath();
+                const baseY = h - 40 - i * 15;
+                for (let x = 0; x <= w; x += 2) {
+                    const y = baseY + Math.sin(x * 0.02 + seed + i) * 6;
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        if (style === 'fireflies') {
+            for (let i = 0; i < 15; i++) {
+                const fx = rand(i + 900) * w;
+                const fy = rand(i + 950) * h;
+                const size = 1.5 + rand(i + 960) * 2;
+                const alpha = 0.05 + rand(i + 970) * 0.1;
+
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#c9a84c';
+                ctx.beginPath();
+                ctx.arc(fx, fy, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow
+                ctx.globalAlpha = alpha * 0.3;
+                ctx.beginPath();
+                ctx.arc(fx, fy, size * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        ctx.globalAlpha = 1;
+    }
+
+    function drawStar(ctx, cx, cy, r, points) {
+        ctx.moveTo(cx, cy - r);
+        for (let i = 0; i < points * 2; i++) {
+            const radius = i % 2 === 0 ? r : r * 0.4;
+            const angle = (i * Math.PI) / points - Math.PI / 2;
+            ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+        }
+        ctx.closePath();
+    }
+
+    // ============================================
+    // BACKGROUND STARS
+    // ============================================
+    (function initBg() {
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 120; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: 0.5 + Math.random() * 1.5,
+                    alpha: Math.random(),
+                    speed: 0.002 + Math.random() * 0.008,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function draw(t) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.alpha = 0.15 + 0.35 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+                ctx.globalAlpha = s.alpha;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Subtle moon glow top-right
+            ctx.globalAlpha = 0.03;
+            const grd = ctx.createRadialGradient(
+                canvas.width * 0.85, canvas.height * 0.1, 10,
+                canvas.width * 0.85, canvas.height * 0.1, 200
+            );
+            grd.addColorStop(0, 'rgba(201, 168, 76, 0.5)');
+            grd.addColorStop(1, 'transparent');
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', () => { resize(); });
+        resize();
+        requestAnimationFrame(draw);
+    })();
+
+    // Init
+    buildBook();
+    window.addEventListener('resize', () => {
+        buildBook();
+    });
+    </script>
+</body>
+</html>
