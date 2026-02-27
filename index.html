@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сказки</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Alegreya:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-deep: #0a0a12;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.06);
+            --text-primary: #e8e4df;
+            --text-muted: #8a8590;
+            --text-dim: #5a5660;
+            --accent-gold: #c9a84c;
+            --accent-gold-dim: rgba(201, 168, 76, 0.15);
+            --accent-warm: #a0522d;
+            --glow: rgba(201, 168, 76, 0.08);
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Alegreya', Georgia, serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        /* === STARFIELD === */
+        .stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle var(--dur) ease-in-out infinite alternate;
+            opacity: 0;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.1; transform: scale(0.8); }
+            100% { opacity: var(--max-opacity); transform: scale(1.2); }
+        }
+
+        /* === AMBIENT GLOW === */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .ambient::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            width: 120vw;
+            height: 60vh;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse, rgba(201, 168, 76, 0.04) 0%, transparent 70%);
+        }
+        .ambient::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40vh;
+            background: linear-gradient(to top, rgba(30, 15, 40, 0.3), transparent);
+        }
+
+        /* === LAYOUT === */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* === HEADER === */
+        header {
+            padding: 100px 0 60px;
+            text-align: center;
+        }
+
+        .header-ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: fadeDown 1s 0.2s ease forwards;
+        }
+
+        .ornament-line {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+        }
+
+        .ornament-symbol {
+            font-size: 14px;
+            color: var(--accent-gold);
+            letter-spacing: 8px;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 300;
+            font-size: clamp(2.8rem, 7vw, 4.5rem);
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeDown 1s 0.4s ease forwards;
+        }
+
+        .subtitle {
+            font-family: 'Alegreya', Georgia, serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+            opacity: 0;
+            animation: fadeDown 1s 0.6s ease forwards;
+        }
+
+        /* === TALES GRID === */
+        .tales-section {
+            padding-bottom: 120px;
+        }
+
+        .tales-count {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 48px;
+            opacity: 0;
+            animation: fadeDown 1s 0.8s ease forwards;
+        }
+
+        .tales-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* === TALE CARD === */
+        .tale-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            padding: 36px 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateY(20px);
+            overflow: hidden;
+        }
+
+        .tale-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--glow), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .tale-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(201, 168, 76, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .tale-card:hover::before {
+            opacity: 1;
+        }
+
+        .tale-card-inner {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+        }
+
+        .tale-emoji {
+            font-size: 2rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 4px;
+            filter: saturate(0.85);
+            transition: filter 0.3s, transform 0.3s;
+        }
+
+        .tale-card:hover .tale-emoji {
+            filter: saturate(1);
+            transform: scale(1.1);
+        }
+
+        .tale-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tale-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 400;
+            font-size: 1.5rem;
+            letter-spacing: 0.02em;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            transition: color 0.3s;
+        }
+
+        .tale-card:hover .tale-title {
+            color: var(--accent-gold);
+        }
+
+        .tale-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .tale-arrow {
+            flex-shrink: 0;
+            align-self: center;
+            width: 20px;
+            height: 20px;
+            color: var(--text-dim);
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .tale-card:hover .tale-arrow {
+            color: var(--accent-gold);
+            transform: translateX(4px);
+        }
+
+        /* === FOOTER === */
+        footer {
+            text-align: center;
+            padding: 40px 0 60px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tale-card.visible {
+            animation: fadeCard 0.6s ease forwards;
+        }
+
+        @keyframes fadeCard {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 600px) {
+            header { padding: 70px 0 40px; }
+            .tale-card { padding: 24px 20px; }
+            .tale-card-inner { gap: 16px; }
+            .tale-emoji { font-size: 1.6rem; }
+            .tale-title { font-size: 1.25rem; }
+            .tale-arrow { display: none; }
+            .ornament-line { width: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stars" id="stars"></div>
+    <div class="ambient"></div>
+
+    <div class="container">
+        <header>
+            <div class="header-ornament">
+                <span class="ornament-line"></span>
+                <span class="ornament-symbol">✦ ✦ ✦</span>
+                <span class="ornament-line"></span>
+            </div>
+            <h1>Сказки</h1>
+            <p class="subtitle">истории, рассказанные тишине</p>
+        </header>
+
+        <section class="tales-section">
+            <p class="tales-count" id="talesCount"></p>
+            <div class="tales-grid" id="talesGrid"></div>
+        </section>
+
+        <footer>
+            <div class="footer-ornament">
+                <span class="ornament-line"></span>
+                <span class="ornament-symbol">✦</span>
+                <span class="ornament-line"></span>
+            </div>
+            <p class="footer-text">каждая история — маленькая дверь</p>
+        </footer>
+    </div>
+
+    <script src="tales.js"></script>
+    <script>
+        // --- Starfield ---
+        (function() {
+            const container = document.getElementById('stars');
+            const count = 80;
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+                star.style.setProperty('--max-opacity', (0.2 + Math.random() * 0.5).toFixed(2));
+                star.style.animationDelay = (Math.random() * 4) + 's';
+                if (Math.random() > 0.85) {
+                    star.style.width = '3px';
+                    star.style.height = '3px';
+                    star.style.boxShadow = '0 0 4px rgba(255,255,255,0.3)';
+                }
+                container.appendChild(star);
+            }
+        })();
+
+        // --- Render Tales ---
+        (function() {
+            const grid = document.getElementById('talesGrid');
+            const counter = document.getElementById('talesCount');
+
+            if (typeof tales === 'undefined' || tales.length === 0) {
+                counter.textContent = 'Пока здесь пусто...';
+                return;
+            }
+
+            const words = ['сказка', 'сказки', 'сказок'];
+            function pluralize(n) {
+                const abs = Math.abs(n) % 100;
+                const last = abs % 10;
+                if (abs > 10 && abs < 20) return words[2];
+                if (last > 1 && last < 5) return words[1];
+                if (last === 1) return words[0];
+                return words[2];
+            }
+
+            counter.textContent = tales.length + ' ' + pluralize(tales.length);
+
+            tales.forEach((tale, i) => {
+                const a = document.createElement('a');
+                a.href = tale.folder + '/index.html';
+                a.className = 'tale-card';
+                a.style.animationDelay = (0.9 + i * 0.12) + 's';
+                a.innerHTML = `
+                    <div class="tale-card-inner">
+                        <span class="tale-emoji">${tale.emoji}</span>
+                        <div class="tale-content">
+                            <h2 class="tale-title">${tale.title}</h2>
+                            <p class="tale-desc">${tale.desc}</p>
+                        </div>
+                        <svg class="tale-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M5 12h14M13 6l6 6-6 6"/>
+                        </svg>
+                    </div>
+                `;
+                grid.appendChild(a);
+            });
+
+            // Intersection observer for staggered reveal
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.tale-card').forEach(card => observer.observe(card));
+
+            // Mouse glow on cards
+            document.querySelectorAll('.tale-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
+                    card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
